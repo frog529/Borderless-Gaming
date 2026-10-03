@@ -28,6 +28,9 @@ jobs:
       - name: Publish AppContainer
         run: dotnet publish AppContainer/appcontainer.csproj -c Release -r win-x64 --self-contained true -o artifact/AppContainer
 
+      - name: Copy AppContainer beside Borderless Gaming
+        run: Copy-Item artifact/AppContainer/appcontainer.exe artifact/BorderlessGaming/AppContainer.exe
+
       - name: Create package
         run: Compress-Archive -Path artifact/* -DestinationPath Borderless-Gaming-10.1.0-AppContainers-win-x64.zip
 
