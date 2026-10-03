@@ -38,6 +38,87 @@ namespace BorderlessGaming.Forms
             lstFavorites.Items.Remove(fav);
         }
 
+        private void SetupAppContainerMenu()
+        {
+            var appContainerMenu = new ToolStripMenuItem("App Container");
+            var imageItem = new ToolStripMenuItem("Image...");
+            var colorItem = new ToolStripMenuItem("Color...");
+            var gradientItem = new ToolStripMenuItem("Gradient...");
+            imageItem.Click += (s, e) => LaunchAppContainer("image");
+            colorItem.Click += (s, e) => LaunchAppContainer("color");
+            gradientItem.Click += (s, e) => LaunchAppContainer("gradient");
+            appContainerMenu.DropDownItems.Add(imageItem);
+            appContainerMenu.DropDownItems.Add(colorItem);
+            appContainerMenu.DropDownItems.Add(gradientItem);
+            mnuFavoritesContext.Items.Add(new ToolStripSeparator());
+            mnuFavoritesContext.Items.Add(appContainerMenu);
+        }
+
+        private void LaunchAppContainer(string mode)
+        {
+            if (lstFavorites.SelectedItem is not Favorite fav) return;
+            var appContainerPath = Path.Combine(AppEnvironment.ExecutableDirectory, "AppContainer.exe");
+            if (!File.Exists(appContainerPath))
+            {
+                MessageBox.Show("AppContainer.exe is missing. Please use the 10.1.0 App Containers package.", "Borderless Gaming", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var pd = _watcher.Processes.FirstOrDefault(p => fav.Matches(p));
+            if (pd == null || pd.WindowHandle == IntPtr.Zero)
+            {
+                MessageBox.Show("Start the game first, then choose App Container from its Favorite.", "Borderless Gaming", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            using var imageDialog = new OpenFileDialog();
+            using var colorDialog = new ColorDialog { FullOpen = true };
+            string? imagePath = null;
+            string? color = null;
+            string? gradient = null;
+            if (mode == "image")
+            {
+                imageDialog.Title = "Choose App Container background image";
+                imageDialog.Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp|All files|*.*";
+                imageDialog.CheckFileExists = true;
+                if (imageDialog.ShowDialog(this) != DialogResult.OK) return;
+                imagePath = imageDialog.FileName;
+            }
+            else if (mode == "color")
+            {
+                if (colorDialog.ShowDialog(this) != DialogResult.OK) return;
+                color = ColorTranslator.ToHtml(colorDialog.Color);
+            }
+            else
+            {
+                if (colorDialog.ShowDialog(this) != DialogResult.OK) return;
+                var first = ColorTranslator.ToHtml(colorDialog.Color);
+                using var secondDialog = new ColorDialog { FullOpen = true };
+                if (secondDialog.ShowDialog(this) != DialogResult.OK) return;
+                gradient = $"{first};{ColorTranslator.ToHtml(secondDialog.Color)}";
+            }
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = appContainerPath,
+                    WorkingDirectory = AppEnvironment.ExecutableDirectory,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                if (imagePath != null) { psi.ArgumentList.Add("--background-image"); psi.ArgumentList.Add(imagePath); }
+                else if (color != null) { psi.ArgumentList.Add("--background-color"); psi.ArgumentList.Add(color); }
+                else { psi.ArgumentList.Add("--background-gradient"); psi.ArgumentList.Add(gradient!); }
+                psi.ArgumentList.Add("--window-handle");
+                psi.ArgumentList.Add($"0x{pd.WindowHandle.ToInt64():X}");
+                psi.ArgumentList.Add("--width"); psi.ArgumentList.Add("-1");
+                psi.ArgumentList.Add("--height"); psi.ArgumentList.Add("-1");
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not start App Container.\\n\\n{ex.Message}", "Borderless Gaming", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void toolStripCheckForUpdates_CheckedChanged(object sender, EventArgs e)
         {
             UserPreferences.Instance.Settings.CheckForUpdates = toolStripCheckForUpdates.Checked;
