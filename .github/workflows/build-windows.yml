@@ -16,30 +16,30 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install .NET Framework 4.5.2 Developer Pack
+      - name: Install NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Download .NET Framework 4.5.2 reference assemblies
         shell: pwsh
         run: |
-          $url = "https://download.microsoft.com/download/8/6/4/864D3D6E-9C5B-4E4E-9E6A-9B7D3B7B4B7C/NDP452-KB2901951-x86-x64-DevPack.exe"
-          $installer = "$env:RUNNER_TEMP\\NDP452-DevPack.exe"
-          Invoke-WebRequest -Uri $url -OutFile $installer
-          Start-Process -FilePath $installer -ArgumentList "/quiet", "/norestart" -Wait -PassThru
+          nuget install Microsoft.NETFramework.ReferenceAssemblies.net452 -Version 1.0.3 -OutputDirectory packages
 
       - name: Restore NuGet packages
         run: nuget restore BorderlessGaming.sln
 
       - name: Build Release
-        run: >
-          msbuild BorderlessGaming.sln
-          /m
-          /p:Configuration=Release
-          /p:Platform="Any CPU"
-          /p:PostBuildEvent=
+        shell: pwsh
+        run: |
+          $ref = Get-ChildItem -Path packages -Recurse -Filter mscorlib.dll | Select-Object -First 1
+          if (-not $ref) { throw "NET Framework 4.5.2 reference assemblies were not found" }
+          Write-Host "Using reference assemblies: $($ref.Directory.FullName)"
+          msbuild BorderlessGaming.sln /m /p:Configuration=Release /p:Platform="Any CPU" /p:FrameworkPathOverride="$($ref.Directory.FullName)" /p:PostBuildEvent= /p:PreBuildEvent=
 
       - name: Collect application
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
-          Copy-Item BorderlessGaming\bin\Release\* artifact\ -Recurse -Force
+          Copy-Item BorderlessGaminginRelease* artifact -Recurse -Force
 
       - name: Upload Windows application
         uses: actions/upload-artifact@v4
