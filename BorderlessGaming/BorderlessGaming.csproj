@@ -58,4 +58,7 @@
   <Target Name="ZipLanguages" BeforeTargets="Publish">
     <ZipDirectory SourceDirectory="$(ProjectDir)..\Languages" DestinationFile="$(PublishDir)\Languages.zip" Overwrite="true" />
   </Target>
+  <ItemGroup>
+    <None Include="AppContainer\\appcontainer.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('AppContainer\\appcontainer.exe')" />
+  </ItemGroup>
 </Project>
