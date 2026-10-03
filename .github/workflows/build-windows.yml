@@ -16,6 +16,14 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Install .NET Framework 4.5.2 Developer Pack
+        shell: pwsh
+        run: |
+          $url = "https://download.microsoft.com/download/8/6/4/864D3D6E-9C5B-4E4E-9E6A-9B7D3B7B4B7C/NDP452-KB2901951-x86-x64-DevPack.exe"
+          $installer = "$env:RUNNER_TEMP\\NDP452-DevPack.exe"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          Start-Process -FilePath $installer -ArgumentList "/quiet", "/norestart" -Wait -PassThru
+
       - name: Restore NuGet packages
         run: nuget restore BorderlessGaming.sln
 
