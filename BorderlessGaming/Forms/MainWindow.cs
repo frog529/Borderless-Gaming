@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using BorderlessGaming.Logic.Core;
@@ -23,6 +25,7 @@ namespace BorderlessGaming.Forms
             _watcher = new ProcessWatcher(this);
             InitializeComponent();
             LanguageManager.Setup(toolStripLanguages);
+            SetupAppContainerMenu();
         }
 
         public void AddFavoriteToList(Favorite fav)
