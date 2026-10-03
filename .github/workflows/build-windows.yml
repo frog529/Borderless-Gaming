@@ -1,0 +1,38 @@
+name: Build Borderless Gaming (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore BorderlessGaming.sln
+
+      - name: Build Release
+        run: >
+          msbuild BorderlessGaming.sln
+          /m
+          /p:Configuration=Release
+          /p:Platform="Any CPU"
+          /p:PostBuildEvent=
+
+      - name: Collect application
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          Copy-Item BorderlessGaming\bin\Release\* artifact\ -Recurse -Force
+
+      - name: Upload Windows application
+        uses: actions/upload-artifact@v4
+        with:
+          name: BorderlessGaming-Windows
+          path: artifact
