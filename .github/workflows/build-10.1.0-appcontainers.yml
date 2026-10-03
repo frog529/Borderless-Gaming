@@ -1,0 +1,38 @@
+name: Build Borderless Gaming 10.1.0 + AppContainer
+
+on:
+  push:
+    branches:
+      - build-10.1.0-appcontainers
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+
+      - name: Publish Borderless Gaming
+        run: dotnet publish BorderlessGaming/BorderlessGaming.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -o artifact/BorderlessGaming
+
+      - name: Publish AppContainer
+        run: dotnet publish AppContainer/appcontainer.csproj -c Release -r win-x64 --self-contained true -o artifact/AppContainer
+
+      - name: Create package
+        run: Compress-Archive -Path artifact/* -DestinationPath Borderless-Gaming-10.1.0-AppContainers-win-x64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Borderless-Gaming-10.1.0-AppContainers-win-x64
+          path: Borderless-Gaming-10.1.0-AppContainers-win-x64.zip
